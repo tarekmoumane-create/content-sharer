@@ -4,3 +4,9 @@ node_modules
 .vercel
 .DS_Store
 .env*
+
+# Vendor docs + skill symlinks installed by the Vercel/Upstash integration.
+# Regenerated on demand; not part of this project's source.
+.agents/
+.claude/
+skills-lock.json
