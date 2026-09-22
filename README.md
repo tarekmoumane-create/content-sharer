@@ -25,11 +25,14 @@ fits the hosting you already use.
 
 ## Platform support
 
-| Platform | Status | What it needs |
+| Platform | Cost per check | What it needs |
 |---|---|---|
-| **YouTube** | Works out of the box | Nothing. Uses each channel's free RSS feed. Covers Shorts and long-form. |
-| **TikTok** | Needs a scraper key | `SCRAPER_PROVIDER=apify` + `APIFY_TOKEN`, or `rapidapi` + `RAPIDAPI_KEY`. |
-| **Instagram** | Needs a scraper key | Same as TikTok. Only video/Reel posts are shared; photos are skipped. |
+| **YouTube** | Free | Nothing. Each channel's public RSS feed. Covers Shorts and long-form. |
+| **TikTok** | 1 scraper credit | `SCRAPER_PROVIDER=scrapecreators` + `SCRAPECREATORS_API_KEY`. |
+| **Instagram** | 1 scraper credit | Same key. Only video/Reel posts are shared; photos are skipped. |
+
+Providers are pluggable: `scrapecreators` (wired up and in use), `apify`, or
+`rapidapi`. `none` disables TikTok/Instagram and leaves YouTube working.
 
 TikTok and Instagram have no official API that lists a given creator's uploads,
 so a third-party scraper is unavoidable. Both platforms go through one small
@@ -97,17 +100,37 @@ Then do a no-op trial run that posts nothing:
 curl -H "Authorization: Bearer $CRON_SECRET" "https://<your-app>.vercel.app/api/cron?dryRun=1"
 ```
 
-## ⚠️ One thing to know about Vercel cron
+## ⚠️ The scraper budget is the real constraint
 
-**Hobby plan cron only fires once per day.** `vercel.json` requests every 15
-minutes, which needs **Vercel Pro** ($20/mo). On Hobby the bot works correctly
-but videos show up up to a day late.
+TikTok and Instagram cost **one credit per creator per check**. YouTube is free
+and is never counted against the budget.
 
-If you'd rather not pay for Pro, the cheapest fix is to keep the deploy exactly
-as-is and have a free external scheduler hit the endpoint:
-[cron-job.org](https://cron-job.org) can call
-`https://<your-app>.vercel.app/api/cron` every 15 minutes with the
-`Authorization: Bearer <CRON_SECRET>` header. Nothing in the code changes.
+```
+credits/day = MAX_METERED_PER_RUN x runs-per-day
+```
+
+At the current setup — 23 TikTok/Instagram creators, cron every 15 minutes,
+`MAX_METERED_PER_RUN=25` (so everyone every run):
+
+| MAX_METERED_PER_RUN | credits/day | credits/month | each creator checked every |
+|---|---|---|---|
+| 25 (all) | 2,208 | 66,240 | 15 min |
+| 12 | 1,152 | 34,560 | ~30 min |
+| 6 | 576 | 17,280 | ~1 hour |
+| 3 | 288 | 8,640 | ~2 hours |
+
+Dialling it down never drops a creator — the rotating cursor just gets to them
+on a later run. Change it with one command, no code redeploy:
+
+```bash
+printf '6' | vercel env add MAX_METERED_PER_RUN production --force
+vercel deploy --prod
+```
+
+When credits run out, TikTok/Instagram checks fail individually and are listed
+in the cron summary's `errors`. YouTube keeps working and nothing crashes.
+
+**Note:** Vercel Hobby cron only fires once per day; every-15-minutes needs Pro.
 
 ## Behaviour worth knowing
 
@@ -140,7 +163,7 @@ lib/
     youtube.js     RSS, no key needed
     tiktok.js      via scraper
     instagram.js   via scraper
-    scraper.js     Apify / RapidAPI provider layer
+    scraper.js     ScrapeCreators / Apify / RapidAPI provider layer
 ```
 
 ### Adding a platform
@@ -156,7 +179,7 @@ All optional, all in `.env.example` with comments:
 
 | Variable | Default | Does |
 |---|---|---|
-| `MAX_CREATORS_PER_RUN` | 25 | Creators checked per run; rotates through the rest |
+| `MAX_METERED_PER_RUN` | 10 | TikTok/IG creators per run = the run's credit bill. YouTube is exempt and always fully checked |
 | `VIDEOS_PER_CHECK` | 5 | How far back to look per creator |
 | `MAX_POSTS_PER_RUN` | 15 | Ceiling on messages per run |
 | `BACKFILL_ON_ADD` | `none` | `none` or `latest` |
@@ -169,3 +192,37 @@ All optional, all in `.env.example` with comments:
 
 Posting the bare URL on its own line is deliberate — Discord unfurls it into a
 playable embed. Wrapping it in markdown breaks that.
+
+
+## Live deployment
+
+Deployed to Vercel as **content-sharer** under `tarekmoumane-3300's projects`
+(Pro, so the 15-minute cron is valid).
+
+- Source: `#hype-creator-handles` (`1470807434443620393`)
+- Target: `#content` (`1466107031650959416`)
+- Server: Hype UGC — bot is `Content Sharer#7242`
+- Storage: Upstash `upstash-kv-gray-basket`, auto-connected
+
+Currently watching **30 creators**: 12 Instagram, 11 TikTok, 7 YouTube.
+
+### Heads-up: MEE6 overlap
+
+`#content` already receives Instagram posts from MEE6 ("New post from …").
+For any creator MEE6 already covers, this bot will post a second copy. Either
+turn off MEE6's feed for those creators, or point this bot at a different
+channel.
+
+### Checking on it
+
+```bash
+# what it parsed, whether channels and token still work
+curl -H "Authorization: Bearer $CRON_SECRET" https://<app>.vercel.app/api/health
+
+# force a run; add ?dryRun=1 to post nothing (still spends credits)
+curl -H "Authorization: Bearer $CRON_SECRET" https://<app>.vercel.app/api/cron
+```
+
+The cron response is the health report: `posted`, `initialised`, `empty`
+(known creators whose feed returned nothing — a mistyped or dead handle shows
+up here), `errors`, and `creditsRemaining`.
