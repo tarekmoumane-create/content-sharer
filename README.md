@@ -206,12 +206,29 @@ Deployed to Vercel as **content-sharer** under `tarekmoumane-3300's projects`
 
 Currently watching **30 creators**: 12 Instagram, 11 TikTok, 7 YouTube.
 
-### Heads-up: MEE6 overlap
+### MEE6 shares this channel
 
-`#content` already receives Instagram posts from MEE6 ("New post from …").
-For any creator MEE6 already covers, this bot will post a second copy. Either
-turn off MEE6's feed for those creators, or point this bot at a different
-channel.
+MEE6 also posts Instagram content into `#content` and covers **11 creators**:
+julian, Sophie, aly, Keishun, Bobby, Braedon, Seth, elliott, karthik, fran and
+Tom. Only two of those overlap with this bot's roster, and both are handled
+via `IGNORE_CREATORS`:
+
+```
+IGNORE_CREATORS=instagram:sophierosesdiary,instagram:braedontrades
+```
+
+So the split is: **MEE6 covers its 11, this bot covers everyone else.** Nine of
+MEE6's creators (julian most of all, at ~195 posts) have no handle in
+`#hype-creator-handles`, so turning MEE6's feed off would silence them
+entirely — don't, unless you add those handles here first.
+
+Removing the two feeds on the MEE6 side would have been tidier, but MEE6's
+dashboard isn't reachable for this server from the `tizzy` account: it lists
+five other servers and redirects away from this guild. Whoever administers MEE6
+on Hype UGC would have to do it there.
+
+`/api/health` reports the active `ignored` list, so a deliberately-skipped
+creator is never mistaken for a bug.
 
 ### Checking on it
 
