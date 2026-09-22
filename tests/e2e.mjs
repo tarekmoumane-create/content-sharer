@@ -84,6 +84,17 @@ line("RUN 4 — same video must never post twice");
 const r4 = await runPoll();
 check("no duplicate post", discord.posted.length === 1, `posted=${discord.posted.length}`);
 
+// ---------------------------------------------------------------- run 5 ----
+line("RUN 5 — IGNORE_CREATORS excludes a creator another bot already covers");
+process.env.IGNORE_CREATORS = "youtube:veritasium, youtube:mkbhd";
+const { loadCreators } = await import("../lib/creators.js");
+const visible = (await loadCreators(SOURCE)).map((c) => `${c.platform}:${c.handle}`);
+console.log(`  visible now: ${visible.join(", ")}`);
+check("ignored creators are gone", !visible.some((k) => k === "youtube:veritasium" || k === "youtube:mkbhd"));
+check("everyone else survives", visible.includes("youtube:mrbeast") && visible.includes("tiktok:khaby.lame"));
+check("whitespace around entries is tolerated", !visible.includes("youtube:mkbhd"));
+process.env.IGNORE_CREATORS = "";
+
 line(failures.length ? `FAILURES: ${failures.join(", ")}` : "ALL CHECKS PASSED");
 redis.server.close(); discord.server.close();
 process.exit(failures.length ? 1 : 0);

@@ -5,7 +5,7 @@
 //
 //   curl -H "Authorization: Bearer $CRON_SECRET" https://<app>.vercel.app/api/health
 import { getChannel } from "../lib/discord.js";
-import { loadCreators } from "../lib/creators.js";
+import { loadCreators, ignoredSet } from "../lib/creators.js";
 import { provider } from "../lib/platforms/scraper.js";
 
 export default async function handler(req, res) {
@@ -25,6 +25,7 @@ export default async function handler(req, res) {
       redis: Boolean(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL),
       scraperProvider: provider(),
     },
+    ignored: [...ignoredSet()],
     channels: {},
     creators: [],
   };
