@@ -115,6 +115,7 @@ At the current setup — 23 TikTok/Instagram creators, cron every 15 minutes,
 | MAX_METERED_PER_RUN | credits/day | credits/month | each creator checked every |
 |---|---|---|---|
 | 25 (all) | 2,208 | 66,240 | 15 min |
+| **2 (current)** | **192** | **5,760** | **~2.9 h — matches MEE6** |
 | 12 | 1,152 | 34,560 | ~30 min |
 | 6 | 576 | 17,280 | ~1 hour |
 | 3 | 288 | 8,640 | ~2 hours |
@@ -287,13 +288,24 @@ timestamp to the Discord message:
 | **median** | **204 min** | **327 min** |
 | slowest | 338 min | 2364 min (39 h) |
 
-**MEE6's median lag is about 4 hours**, occasionally over a day. This bot runs
-every 15 minutes. Matching MEE6's cadence would be a 16x regression, so it is
-deliberately *not* matched — the schedule stays at 15 minutes.
+**MEE6's median lag is about 4 hours**, occasionally over a day.
 
-The practical consequence: the two ignored creators arrive on MEE6's slow
-schedule. If freshness on them matters more than avoiding a duplicate, remove
-them from `IGNORE_CREATORS` and accept two copies of each post.
+This bot is tuned to match that on the paid platforms: `MAX_METERED_PER_RUN=2`
+puts each TikTok/Instagram creator on a ~2.9 hour rotation, comfortably inside
+MEE6's 4.1 hour median, for **192 credits/day instead of 2,208** — an 11x
+saving for cadence the server has lived with for months.
+
+The cron itself stays at **15 minutes**, not 4 hours. YouTube costs nothing, so
+slowing it down would sacrifice freshness for no saving. Only the metered
+platforms are rate-limited, and they are limited by the per-run quota rather
+than the schedule.
+
+Once backoff activates, the ~13 creators who have never posted stop consuming
+those two slots, so the active creators roughly double in frequency again.
+
+The practical consequence of the ignore list: the two ignored creators arrive
+on MEE6's slow schedule. If freshness on them matters more than avoiding a
+duplicate, remove them from `IGNORE_CREATORS` and accept two copies.
 
 `/api/health` reports the active `ignored` list, so a deliberately-skipped
 creator is never mistaken for a bug.
