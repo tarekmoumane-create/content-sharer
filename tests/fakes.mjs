@@ -12,7 +12,14 @@ export function startFakeRedis() {
   const exec = ([cmd, ...args]) => {
     switch (String(cmd).toLowerCase()) {
       case "get": return strings.has(args[0]) ? strings.get(args[0]) : null;
-      case "set": strings.set(args[0], args[1]); return "OK";
+      case "set": {
+        // Supports the NX flag the alert latch relies on; EX is accepted and
+        // ignored since tests don't need real expiry.
+        const flags = args.slice(2).map((f) => String(f).toUpperCase());
+        if (flags.includes("NX") && strings.has(args[0])) return null;
+        strings.set(args[0], args[1]);
+        return "OK";
+      }
       case "sadd": { const s = set(args[0]); let n = 0;
         for (const v of args.slice(1)) if (!s.has(String(v))) { s.add(String(v)); n++; } return n; }
       case "sismember": return set(args[0]).has(String(args[1])) ? 1 : 0;

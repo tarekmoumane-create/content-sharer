@@ -95,6 +95,17 @@ check("everyone else survives", visible.includes("youtube:mrbeast") && visible.i
 check("whitespace around entries is tolerated", !visible.includes("youtube:mkbhd"));
 process.env.IGNORE_CREATORS = "";
 
+// ---------------------------------------------------------------- run 6 ----
+line("RUN 6 — low-credit alert fires once, not every run");
+const { claimAlert } = await import("../lib/store.js");
+const first  = await claimAlert("low-credits", 3600);
+const second = await claimAlert("low-credits", 3600);
+const third  = await claimAlert("low-credits", 3600);
+console.log(`  claims: ${first}, ${second}, ${third}`);
+check("first call claims the alert", first === true);
+check("repeat calls stay silent", second === false && third === false);
+check("a different alert is unaffected", (await claimAlert("other", 3600)) === true);
+
 line(failures.length ? `FAILURES: ${failures.join(", ")}` : "ALL CHECKS PASSED");
 redis.server.close(); discord.server.close();
 process.exit(failures.length ? 1 : 0);

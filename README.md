@@ -128,7 +128,10 @@ vercel deploy --prod
 ```
 
 When credits run out, TikTok/Instagram checks fail individually and are listed
-in the cron summary's `errors`. YouTube keeps working and nothing crashes.
+in the cron summary's `errors`. YouTube keeps working and nothing crashes —
+which is exactly why it's easy to miss, so the bot posts a warning into the
+target channel when the balance drops below `LOW_CREDIT_WARNING` (default 500),
+at most once every 12 hours.
 
 **Note:** Vercel Hobby cron only fires once per day; every-15-minutes needs Pro.
 
@@ -183,6 +186,8 @@ All optional, all in `.env.example` with comments:
 | `VIDEOS_PER_CHECK` | 5 | How far back to look per creator |
 | `MAX_POSTS_PER_RUN` | 15 | Ceiling on messages per run |
 | `BACKFILL_ON_ADD` | `none` | `none` or `latest` |
+| `IGNORE_CREATORS` | empty | `platform:handle` list to skip (another bot covers them) |
+| `LOW_CREDIT_WARNING` | 500 | Warn in-channel below this balance; 0 disables |
 | `POST_TEMPLATE` | see below | `{name}` `{url}` `{platform}` `{title}` |
 
 ```
