@@ -135,6 +135,21 @@ at most once every 12 hours.
 
 **Note:** Vercel Hobby cron only fires once per day; every-15-minutes needs Pro.
 
+## Backing off creators who have never posted
+
+A creator with no videos at all still costs a credit every time they are
+checked. Those creators are re-checked on an escalating delay — 30 min, 1 h,
+2 h, 4 h, then capped — instead of every run, and a deferred creator releases
+its credit slot to someone active rather than just being skipped.
+
+The delay resets to zero the instant they post anything, so a debut is never
+missed by more than the current wait. Only TikTok and Instagram are affected;
+YouTube is free, so throttling it would cost freshness and save nothing.
+
+`BACKOFF_START_AT` schedules activation. The cron summary reports
+`backoff: "active"` or `"scheduled for <date>"`, plus a `deferred` list of who
+is currently being skipped.
+
 ## Behaviour worth knowing
 
 - **Adding a creator never floods the channel.** The first time a creator is
@@ -188,6 +203,7 @@ All optional, all in `.env.example` with comments:
 | `BACKFILL_ON_ADD` | `none` | `none` or `latest` |
 | `IGNORE_CREATORS` | empty | `platform:handle` list to skip (another bot covers them) |
 | `LOW_CREDIT_WARNING` | 500 | Warn in-channel below this balance; 0 disables |
+| `BACKOFF_START_AT` | empty | Date to activate never-posted backoff; empty = on now |
 | `POST_TEMPLATE` | see below | `{name}` `{url}` `{platform}` `{title}` |
 
 ```
