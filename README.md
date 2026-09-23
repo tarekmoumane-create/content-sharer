@@ -246,26 +246,54 @@ Deployed to Vercel as **content-sharer** under `tarekmoumane-3300's projects`
 
 Currently watching **30 creators**: 12 Instagram, 11 TikTok, 7 YouTube.
 
-### MEE6 shares this channel
+### MEE6 shares this channel — measured, not guessed
 
-MEE6 also posts Instagram content into `#content` and covers **11 creators**:
-julian, Sophie, aly, Keishun, Bobby, Braedon, Seth, elliott, karthik, fran and
-Tom. Only two of those overlap with this bot's roster, and both are handled
-via `IGNORE_CREATORS`:
+MEE6 posts Instagram content into `#content` for 11 creators. Display names in
+its messages are not handles, so each was resolved by looking up the owner of a
+post it linked:
+
+| MEE6 name | Instagram handle | Last posted | In handles channel? |
+|---|---|---|---|
+| julian | `trades.byju` | active | **yes — overlap** |
+| Sophie | `sophierosesdiary` | active | **yes — overlap** |
+| aly | `alyybuildswealth` | Jun | no |
+| Keishun | `mintz.trades` | Jul | no |
+| Bobby | `jack.tradesmemes` | Mar | no |
+| fran | `fran.hype_` | Mar | no |
+| Tom | `tradewithtom01` | Feb | no |
+| Braedon, elliott, Seth, karthik | unresolved (posts deleted) | Feb–Mar | unknown |
+
+Only **two** genuinely overlap, and both are ignored:
 
 ```
-IGNORE_CREATORS=instagram:sophierosesdiary,instagram:braedontrades
+IGNORE_CREATORS=instagram:trades.byju,instagram:sophierosesdiary
 ```
 
-So the split is: **MEE6 covers its 11, this bot covers everyone else.** Nine of
-MEE6's creators (julian most of all, at ~195 posts) have no handle in
-`#hype-creator-handles`, so turning MEE6's feed off would silence them
-entirely — don't, unless you add those handles here first.
+Everything else in the handles channel is this bot's. The five MEE6-only
+handles are deliberately *not* added here — MEE6 already covers them.
 
-Removing the two feeds on the MEE6 side would have been tidier, but MEE6's
-dashboard isn't reachable for this server from the `tizzy` account: it lists
-five other servers and redirects away from this guild. Whoever administers MEE6
-on Hype UGC would have to do it there.
+Note that only julian and Sophie are still posting; MEE6's other nine have been
+quiet for months. If MEE6 is ever switched off, only those five handles above
+need adding here.
+
+### How often MEE6 fires
+
+Measured from 20 posts by its two active creators, comparing the Instagram
+timestamp to the Discord message:
+
+| | julian | Sophie |
+|---|---|---|
+| fastest | 35 min | 12 min |
+| **median** | **204 min** | **327 min** |
+| slowest | 338 min | 2364 min (39 h) |
+
+**MEE6's median lag is about 4 hours**, occasionally over a day. This bot runs
+every 15 minutes. Matching MEE6's cadence would be a 16x regression, so it is
+deliberately *not* matched — the schedule stays at 15 minutes.
+
+The practical consequence: the two ignored creators arrive on MEE6's slow
+schedule. If freshness on them matters more than avoiding a duplicate, remove
+them from `IGNORE_CREATORS` and accept two copies of each post.
 
 `/api/health` reports the active `ignored` list, so a deliberately-skipped
 creator is never mistaken for a bug.
