@@ -30,6 +30,44 @@ process.env.DISCORD_TARGET_CHANNEL_ID = TARGET;
 process.env.SCRAPER_PROVIDER = "none";
 process.env.VIDEOS_PER_CHECK = "4";
 
+// YouTube is stubbed rather than called for real. This suite asserts exact
+// post counts, and a live feed that 404s or changes between runs turns those
+// assertions into coin flips. Discord and Redis still go to the local fakes.
+const CHANNELS = {
+  mrbeast:    "UCX6OQ3DkcsbYNE6H8uQQuVA",
+  veritasium: "UCveritasiumAAAAAAAAAAAA",
+  mkbhd:      "UCmkbhdBBBBBBBBBBBBBBBBB",
+};
+const FEEDS = {
+  [CHANNELS.mrbeast]:    [["mb1", "Beast One"], ["mb2", "Beast Two"], ["mb3", "Beast Three"], ["mb4", "Beast Four"], ["mb5", "Beast Five"]],
+  [CHANNELS.veritasium]: [["vt1", "Veri One"], ["vt2", "Veri Two"]],
+  [CHANNELS.mkbhd]:      [["mk1", "MKB One"], ["mk2", "MKB Two"], ["mk3", "MKB Three"]],
+};
+const rss = (entries) => `<?xml version="1.0"?><feed>${entries.map(([id, t], i) =>
+  `<entry><yt:videoId>${id}</yt:videoId><title>${t}</title><author><name>${t.split(" ")[0]}</name></author>` +
+  `<published>2026-09-${String(10 + i).padStart(2, "0")}T00:00:00+00:00</published></entry>`).join("")}</feed>`;
+
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (url, opts) => {
+  const u = String(url);
+  if (!u.includes("youtube.com")) return realFetch(url, opts);
+
+  const feedId = u.match(/channel_id=(UC[\w-]+)/)?.[1];
+  if (feedId) {
+    const entries = FEEDS[feedId];
+    return entries
+      ? { ok: true, status: 200, text: async () => rss(entries) }
+      : { ok: false, status: 404, text: async () => "" };
+  }
+
+  // Channel page: serve the RSS link tag the resolver reads the id from.
+  const handle = u.match(/youtube\.com\/(?:@|c\/|user\/)([\w.\-]+)/)?.[1]?.toLowerCase();
+  const id = handle && CHANNELS[handle];
+  return id
+    ? { ok: true, status: 200, text: async () => `<link href="https://www.youtube.com/feeds/videos.xml?channel_id=${id}">` }
+    : { ok: false, status: 404, text: async () => "" };
+};
+
 const { runPoll } = await import("../lib/poll.js");
 
 const line = (s) => console.log(`\n${"=".repeat(64)}\n${s}\n${"=".repeat(64)}`);
@@ -61,7 +99,7 @@ check("no creators re-initialised", r2.initialised.length === 0);
 
 // ---------------------------------------------------------------- run 3 ----
 line("RUN 3 — simulate a fresh upload by forgetting one video");
-const before = redis.dump().sets.find(([k]) => k.startsWith("seen:youtube:ucx6"));
+const before = redis.dump().sets.find(([k]) => k.toLowerCase().startsWith("seen:youtube:ucx6"));
 const [seenKey, ids] = before;
 console.log(`  ${seenKey} currently holds ${ids.length} ids`);
 // Drop the newest id, exactly as if MrBeast had just posted it.

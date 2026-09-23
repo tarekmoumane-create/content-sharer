@@ -27,7 +27,7 @@ fits the hosting you already use.
 
 | Platform | Cost per check | What it needs |
 |---|---|---|
-| **YouTube** | Free | Nothing. Each channel's public RSS feed. Covers Shorts and long-form. |
+| **YouTube** | Free | Nothing. Public RSS feed, falling back to the channel's upload grid. Covers Shorts and long-form. |
 | **TikTok** | 1 scraper credit | `SCRAPER_PROVIDER=scrapecreators` + `SCRAPECREATORS_API_KEY`. |
 | **Instagram** | 1 scraper credit | Same key. Only video/Reel posts are shared; photos are skipped. |
 
@@ -134,6 +134,25 @@ target channel when the balance drops below `LOW_CREDIT_WARNING` (default 500),
 at most once every 12 hours.
 
 **Note:** Vercel Hobby cron only fires once per day; every-15-minutes needs Pro.
+
+## YouTube: why there are two code paths
+
+The RSS feed is the cheap path and gives exact publish dates, so it is tried
+first. But it is unreliable for this roster: it returns **404 for channels that
+demonstrably have uploads** — reproducibly, not as a blip — and intermittently
+500s. Shorts-only channels are the worst affected, and most creators here post
+Shorts exclusively.
+
+So when the feed fails or comes back empty, the bot reads the channel's own
+upload grid instead. Still free, still no API key. The tradeoff is that the
+grid has no exact timestamps, only "3 days ago" text, so those videos carry a
+null date and rely on grid order (newest first, reversed before posting).
+
+**The one thing not to break here:** only `richItemRenderer` entries — the
+channel's own uploads — may be read. A YouTube channel page mentions plenty of
+*other* channels' video ids in recommendations and sidebars, and scooping those
+up would post strangers' videos under your creator's name.
+`tests/youtube.mjs` seeds the fixture with decoy ids specifically to catch that.
 
 ## Backing off creators who have never posted
 

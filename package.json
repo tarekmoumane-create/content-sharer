@@ -8,11 +8,12 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node tests/parse.mjs && node tests/e2e.mjs && node tests/backoff.mjs",
+    "test": "node tests/parse.mjs && node tests/e2e.mjs && node tests/backoff.mjs && node tests/youtube.mjs",
     "test:parse": "node tests/parse.mjs",
     "test:e2e": "node tests/e2e.mjs",
     "check": "node --check api/cron.js && node --check lib/poll.js && echo ok",
-    "test:backoff": "node tests/backoff.mjs"
+    "test:backoff": "node tests/backoff.mjs",
+    "test:youtube": "node tests/youtube.mjs"
   },
   "dependencies": {
     "@upstash/redis": "latest"
